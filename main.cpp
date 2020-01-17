@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <fstream>
-
 #include <algorithm>
 
 using namespace std;
@@ -11,7 +10,8 @@ using namespace std;
 #define fname_length 13
 #define limited_memory 8000000000 //8GB
 
-char max_string[] = {char(127), char(127), char(127), char(127), char(127), char(127), char(127), char(127)};
+char max_char[] = {char(127), char(127), char(127), char(127), char(127), char(127), char(127), char(127)};
+string max_string(max_char);
 
 struct node {  
     string element; 
@@ -71,46 +71,17 @@ public:
 	}
 };
 
-void merge(string arr[], int l, int m, int r) { 
-    int i, j, k; 
-    int n1 = m - l + 1; 
-    int n2 = r - m; 
-  
-    string *L = new string[n1];
-	string *R = new string[n2];
-  
-    for(i = 0; i < n1; i++) 
-        L[i] = arr[l + i]; 
-    for(j = 0; j < n2; j++) 
-        R[j] = arr[m + 1 + j]; 
-  
-    i = 0; 
-    j = 0; 
-    k = l; 
-    while (i < n1 && j < n2) { 
-		if (L[i].compare(R[j]) <= 0) 
-            arr[k++] = L[i++]; 
-        else
-            arr[k++] = R[j++]; 
-    } 
-  
-    while (i < n1) 
-        arr[k++] = L[i++]; 
-  
-    while(j < n2) 
-        arr[k++] = R[j++]; 
-} 
-
-void mergeSort(string arr[], int l, int r) { 
-    if (l < r) { 
-        int m = l + (r - l) / 2; 
-        mergeSort(arr, l, m); 
-        mergeSort(arr, m + 1, r); 
-        merge(arr, l, m, r); 
+template<class Iter>
+void mergeSort(Iter first, Iter last) { 
+    if (last - first > 1) { 
+        Iter middle = first + (last - first) / 2;
+        mergeSort(first, middle);
+        mergeSort(middle, last);
+		inplace_merge(first, middle, last);
     } 
 } 
 
-void createInitialRuns(char *input_file, long mem_limit, long &num_ways) { 
+void createInitialRuns(char *input_file, int mem_limit, int &num_ways) { 
 	if (mem_limit > limited_memory) mem_limit = limited_memory;
 	ifstream f_in;
 	f_in.open(input_file);
@@ -129,7 +100,7 @@ void createInitialRuns(char *input_file, long mem_limit, long &num_ways) {
 
 	ofstream *f_out = new ofstream[num_ways];
     char fileName[fname_length]; 
-    for (long i = 0; i < num_ways; i++) { 
+    for (int i = 0; i < num_ways; i++) { 
         itoa(i, fileName, 10); 
 		f_out[i].open(fileName);
     } 
@@ -153,7 +124,7 @@ void createInitialRuns(char *input_file, long mem_limit, long &num_ways) {
 					countByte += temp.size();
 				}
 			}
-			mergeSort(&arr[0], 0, arr.size() - 1); 
+			mergeSort(arr.begin(), arr.end()); 
 			for (int j = 0; j < arr.size(); j++) {
 				if (arr[j].size())
 					f_out[next_output_file]<<arr[j]<<"\n";
@@ -173,7 +144,7 @@ void createInitialRuns(char *input_file, long mem_limit, long &num_ways) {
 			getline(f_in, temp);
 			arr.push_back(temp);
 		}
-		mergeSort(&arr[0], 0, arr.size() - 1); 
+		mergeSort(arr.begin(), arr.end()); 
 		for (int j = 0; j < arr.size(); j++) {
 			if (arr[j].size())
 				f_out[next_output_file]<<arr[j]<<"\n";
@@ -183,7 +154,7 @@ void createInitialRuns(char *input_file, long mem_limit, long &num_ways) {
 		arr.swap(temp);
 	}
 
-    for (long i = 0; i < num_ways; i++)
+    for (int i = 0; i < num_ways; i++)
 		f_out[i].close(); 
 	f_in.close();
 } 
@@ -201,7 +172,7 @@ bool isFileExists(char *name) {
 
 void mergeFiles(char *output_file, int num_ways) { 
 	ifstream *f_in = new ifstream[num_ways];
-    for (long i = 0; i < num_ways; i++) { 
+    for (int i = 0; i < num_ways; i++) { 
         char fileName[fname_length]; 
 		itoa(i, fileName, 10);
 		f_in[i].open(fileName);
@@ -209,7 +180,7 @@ void mergeFiles(char *output_file, int num_ways) {
 	ofstream f_out(output_file);
 
 	vector<node> arr;
-	long i;
+	int i;
     for (i = 0; i < num_ways; i++) { 
 		node temp;
 		if (!isEmptyFile(f_in[i])) {
@@ -237,7 +208,7 @@ void mergeFiles(char *output_file, int num_ways) {
     } 
   
 	char fileName[fname_length]; 
-	for (long i = 0; i < num_ways; i++) {
+	for (int i = 0; i < num_ways; i++) {
 		f_in[i].close(); 
 		itoa(i, fileName, 10); 
 		remove(fileName);
@@ -245,11 +216,25 @@ void mergeFiles(char *output_file, int num_ways) {
 	f_out.close(); 
 } 
 
-void externalSort(char* input_file,  char *output_file, long mem_limit) { 
-	long num_ways;
+void externalSort(char* input_file,  char *output_file, int mem_limit) { 
+	int num_ways;
     createInitialRuns(input_file, mem_limit, num_ways); 
 	mergeFiles(output_file, num_ways); 
 } 
+
+int isValidMem(char *mem) {
+	int len = strlen(mem);
+	if (len > 10) return false;
+	for (int i = 0; i < len; i++) {
+		if (mem[i] < '0' || mem[i] > '9') return false;
+	}
+	int rs = 0;
+	for (int i = 0; i < len; i++) {
+		rs = rs*10 + (mem[i] - '0');
+	}
+	if (rs > limited_memory) return false;
+	return rs;
+}
 
 char *genString() {
 	char *s = new char[1000];
@@ -262,22 +247,9 @@ char *genString() {
 	return s;
 }
 
-int isValidMem(char *mem) {
-	int len = strlen(mem);
-	if (len > 10) return false;
-	if (mem[0] == '-') return false;
-	for (int i = 0; i < len; i++) {
-		if (mem[i] < '0' || mem[i] > '9') return false;
-	}
-	int rs = 0;
-	for (int i = 0; i < len; i++) {
-		rs = rs*10 + (mem[i] - '0');
-	}
-	if (rs > limited_memory) return false;
-	return rs;
-}
-
 int main() { 
+	std::ios::sync_with_stdio(false);
+
 	char mem_limit[100]; 
     char input_file[100];
     char output_file[100]; 
@@ -299,17 +271,17 @@ int main() {
 		printf("Memory limit (bytes): ");
 		cin>>mem_limit;
 	}
-  
-	// Generate text file
 	/*
+	// Generate text file
     ofstream f_out(input_file);
   
-    for (int i = 0; i < 100000; i++) 
+    for (int i = 0; i < 1000000; i++) 
 		f_out<<genString()<<'\n';
 
 	f_out.close();
 	*/
 
 	externalSort(input_file, output_file, mem); 
+	printf("Done!!!\n");
     return 0; 
 } 
